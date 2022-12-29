@@ -38,19 +38,19 @@ var keywords = map[string]tkType{
 
 type Netrc struct {
 	tokens     []*token
-	machines   []*Machine
+	Machines   []*Machine
 	macros     Macros
 	updateLock sync.Mutex
 }
 
 // FindMachine returns the Machine in n named by name. If a machine named by
 // name exists, it is returned. If no Machine with name name is found and there
-// is a ``default'' machine, the ``default'' machine is returned. Otherwise, nil
+// is a “default” machine, the “default” machine is returned. Otherwise, nil
 // is returned.
 func (n *Netrc) FindMachine(name string) (m *Machine) {
 	// TODO(bgentry): not safe for concurrency
 	var def *Machine
-	for _, m = range n.machines {
+	for _, m = range n.Machines {
 		if m.Name == name {
 			return m
 		}
@@ -126,13 +126,13 @@ func (n *Netrc) NewMachine(name, login, password, account string) *Machine {
 		},
 	}
 	n.insertMachineTokensBeforeDefault(m)
-	for i := range n.machines {
-		if n.machines[i].IsDefault() {
-			n.machines = append(append(n.machines[:i], m), n.machines[i:]...)
+	for i := range n.Machines {
+		if n.Machines[i].IsDefault() {
+			n.Machines = append(append(n.Machines[:i], m), n.Machines[i:]...)
 			return m
 		}
 	}
-	n.machines = append(n.machines, m)
+	n.Machines = append(n.Machines, m)
 	return m
 }
 
@@ -163,15 +163,15 @@ func (n *Netrc) RemoveMachine(name string) {
 	n.updateLock.Lock()
 	defer n.updateLock.Unlock()
 
-	for i := range n.machines {
-		if n.machines[i] != nil && n.machines[i].Name == name {
-			m := n.machines[i]
+	for i := range n.Machines {
+		if n.Machines[i] != nil && n.Machines[i].Name == name {
+			m := n.Machines[i]
 			for _, t := range []*token{
 				m.nametoken, m.logintoken, m.passtoken, m.accounttoken,
 			} {
 				n.removeToken(t)
 			}
-			n.machines = append(n.machines[:i], n.machines[i+1:]...)
+			n.Machines = append(n.Machines[:i], n.Machines[i+1:]...)
 			return
 		}
 	}
@@ -373,7 +373,7 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 		return nil, err
 	}
 
-	nrc := Netrc{machines: make([]*Machine, 0, 20), macros: make(Macros, 10)}
+	nrc := Netrc{Machines: make([]*Machine, 0, 20), macros: make(Macros, 10)}
 
 	defaultSeen := false
 	var currentMacro *token
@@ -415,7 +415,7 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 				return nil, &Error{pos, "multiple default token"}
 			}
 			if m != nil {
-				nrc.machines, m = append(nrc.machines, m), nil
+				nrc.Machines, m = append(nrc.Machines, m), nil
 			}
 			m = new(Machine)
 			m.Name = ""
@@ -425,7 +425,7 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 				return nil, &Error{pos, errBadDefaultOrder}
 			}
 			if m != nil {
-				nrc.machines, m = append(nrc.machines, m), nil
+				nrc.Machines, m = append(nrc.Machines, m), nil
 			}
 			m = new(Machine)
 			if t.rawvalue, m.Name, pos, err = scanValue(scanner, pos); err != nil {
@@ -470,7 +470,7 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 	}
 
 	if m != nil {
-		nrc.machines, m = append(nrc.machines, m), nil
+		nrc.Machines, m = append(nrc.Machines, m), nil
 	}
 	return &nrc, nil
 }
@@ -487,9 +487,9 @@ func ParseFile(filename string) (*Netrc, error) {
 }
 
 // Parse parses from the the Reader r as a netrc file and returns the set of
-// machine information and macros defined in it. The ``default'' machine,
+// machine information and macros defined in it. The “default” machine,
 // which is intended to be used when no machine name matches, is identified
-// by an empty machine name. There can be only one ``default'' machine.
+// by an empty machine name. There can be only one “default” machine.
 //
 // If there is a parsing error, an Error is returned.
 func Parse(r io.Reader) (*Netrc, error) {
@@ -499,8 +499,8 @@ func Parse(r io.Reader) (*Netrc, error) {
 // FindMachine parses the netrc file identified by filename and returns the
 // Machine named by name. If a problem occurs parsing the file at filename, an
 // error is returned. If a machine named by name exists, it is returned. If no
-// Machine with name name is found and there is a ``default'' machine, the
-// ``default'' machine is returned. Otherwise, nil is returned.
+// Machine with name name is found and there is a “default” machine, the
+// “default” machine is returned. Otherwise, nil is returned.
 func FindMachine(filename, name string) (m *Machine, err error) {
 	n, err := ParseFile(filename)
 	if err != nil {
